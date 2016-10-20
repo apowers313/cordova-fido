@@ -18,6 +18,9 @@ import java.util.List;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ApplicationInfo;
 
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+
 /**
  * This class echoes a string called from JavaScript.
  */
@@ -28,17 +31,24 @@ public class fido extends CordovaPlugin {
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         Log.w("FIDO", "executing...");
-        if (action.equals("uafDiscover")) {
-            String message = args.getString(0);
-            return this.uafDiscover(message, callbackContext);
-        }
-        return false;
-    }
-
-    private boolean uafDiscover(String message, CallbackContext callbackContext) {
-
         this.callbackContext = callbackContext;
 
+        if (action.equals("uafDiscover")) {
+            return this.uafDiscover();
+        } else if (action.equals("uafCheckPolicy")) {
+            String message = args.getString(0);
+            return this.uafCheckPolicy(message);
+        } else if (action.equals("uafOperation")) {
+            String message = args.getString(0);
+            return this.uafOperation(message);
+        } else {
+            Log.w("FIDO", "Unknown FIDO Cordova command: " + action);
+            return false;
+        }
+    }
+
+    // TODO: there's a lot of copying and pasting below -- this could probably be refactored
+    private boolean uafDiscover() {
         /**
          * Lookup Packages that provide the intent
          * Per UAF Client API Transport, Section 6.2 (See: "NOTE")
@@ -83,20 +93,110 @@ public class fido extends CordovaPlugin {
             Log.e("FIDO", "Got 'Not Found' exception");
             Log.d("FIDO", "Exception: " + e.getMessage());
         }
-        Log.d("FIDO", "blah blah blah");
 
+        /**
+         * We can't call the callback until we get a resonse to our intent
+         * So say "NO_RESULT" for now and save the result in our context
+         */
         PluginResult r = new PluginResult(PluginResult.Status.NO_RESULT);
         r.setKeepCallback(true);
-        callbackContext.sendPluginResult(r);
+        this.callbackContext.sendPluginResult(r);
 
-        // Log.w("FIDO", "uafDiscover...");
-        // if (message != null && message.length() > 0) {
-        //     // this.cordova.startActivityForResult((CordovaPlugin) this,i, 0);
-        //     callbackContext.success("{\"testing\": \"" + message + "\"}");
-        // } else {
-        //     callbackContext.error("Expected one non-empty string argument.");
-        // }
         return true;
+    }
+
+    private void uafDiscoverResult(Intent data) {
+        Log.d("FIDO", "uafDiscoverResult");
+        /**
+         * Per UAF Client API Transport, Section 6.2.2
+         */
+        String componentName = data.getStringExtra("componentName");
+        Log.d ("FIDO", "Component Name: " + componentName);
+        String errorCode = data.getStringExtra("errorCode"); // XXX wrong
+        Log.d ("FIDO", "Error Code: " + errorCode);
+        String discoveryData = data.getStringExtra("discoveryData");
+        Log.d ("FIDO", "Discovery Data: " + discoveryData);
+        // TODO: Discovery needs to reutnr discoveryData and an errorCode
+        this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, discoveryData));
+    }
+
+    // private boolean uafCheckPolicy(String message, String origin) {
+    private boolean uafCheckPolicy(String message) {
+        Log.d("FIDO", "uafCheckPolicy: " + message);
+        if (message != null && message.length() > 0) {
+            // this.cordova.startActivityForResult((CordovaPlugin) this,i, 0);
+            callbackContext.success("{\"uafCheckPolicy\": \"" + message + "\"}");
+        } else {
+            callbackContext.error("Expected one non-empty string argument.");
+        }
+
+        return true;
+    }
+
+    private void uafCheckPolicyResult(Intent data) {
+        Log.d("FIDO", "uafCheckPolicyResult");
+    }
+
+    // private boolean uafOperation(String message, String channelBindings, String origin) {
+    private boolean uafOperation(String message) {
+        Log.d("FIDO", "uafOperation: " + message);
+
+        /**
+         * Fire our FIDO_OPERATION::UAF_OPERATION
+         * Hopefully onActivityResult() below will catch a reply
+         * If nothing is found, startActivityForResult() will throw an ActivityNotFoundException error
+         */
+        Intent fidoIntent = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
+        fidoIntent.setType ("application/fido.uaf_client+json");
+        fidoIntent.putExtra ("UAFIntentType", "UAF_OPERATION");
+
+        /**
+         * Fire our FIDO_OPERATION::DISCOVER
+         * Hopefully onActivityResult() below will catch a reply
+         * If nothing is found, startActivityForResult() will throw an ActivityNotFoundException error
+         */
+        Log.d("FIDO", "setting callback");
+        cordova.setActivityResultCallback (this);
+        try {
+            Log.d("FIDO", "starting activity");
+            cordova.getActivity().startActivityForResult(fidoIntent, 1);
+        } catch (ActivityNotFoundException e) {
+            Log.e("FIDO", "Got 'Not Found' exception");
+            Log.d("FIDO", "Exception: " + e.getMessage());
+        }
+
+        /**
+         * We can't call the callback until we get a resonse to our intent
+         * So say "NO_RESULT" for now and save the result in our context
+         */
+        PluginResult r = new PluginResult(PluginResult.Status.NO_RESULT);
+        r.setKeepCallback(true);
+        this.callbackContext.sendPluginResult(r);
+
+        return true;
+    }
+
+    private void uafOperationResult(Intent data) {
+        Log.d("FIDO", "uafOperationResult");
+
+        Log.d ("FIDO", data.toString());
+        String errorCode = data.getStringExtra("errorCode"); // XXX wrong
+        Log.d ("FIDO", "Error Code: " + errorCode);
+        String message = data.getStringExtra("message");
+        Log.d ("FIDO", "Message: " + message);
+        this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, message));
+    }
+
+    private void uafOperationCompletionStatus(Intent data) {
+        Log.d("FIDO", "uafOperationCompletionStatus");
+
+        String componentName = data.getStringExtra("componentName");
+        Log.d ("FIDO", "Component Name: " + componentName);
+        String responseCode = data.getStringExtra("responseCode"); // XXX wrong
+        Log.d ("FIDO", "Response Code: " + responseCode);
+        String message = data.getStringExtra("message");
+        Log.d ("FIDO", "Message: " + message);
+        this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, message));
     }
 
     @Override
@@ -113,21 +213,23 @@ public class fido extends CordovaPlugin {
          * This is a FIDO_OPERATION UAF Intent (as opposed to other Intents we might catch)
          */
         if (data.getExtras().containsKey("UAFIntentType")) {
-            Log.d ("FIDO", "Received UAFIntentType:");
-            /**
-             * We should only be catching DISCOVERY_RESULTS
-             * Otherwise the code below will choke -- we can make this more robust later
-             * Per UAF Client API Transport, Section 6.2.2
-             */
             String intentType = data.getStringExtra("UAFIntentType");
             Log.d ("FIDO", "Intent Type: " + intentType);
-            String componentName = data.getStringExtra("componentName");
-            Log.d ("FIDO", "Component Name: " + componentName);
-            String errorCode = data.getStringExtra("errorCode"); // XXX wrong
-            Log.d ("FIDO", "Error Code: " + errorCode);
-            String discoveryData = data.getStringExtra("discoveryData");
-            Log.d ("FIDO", "Discovery Data: " + discoveryData);
-            this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, discoveryData));
+            if (intentType.equals("DISCOVER_RESULT")) {
+                uafDiscoverResult(data);
+                return;
+            } else if (intentType.equals("CHECK_POLICY_RESULT")) {
+                uafCheckPolicyResult(data);
+                return;
+            } else if (intentType.equals("UAF_OPERATION_RESULT")) {
+                uafOperationResult(data);
+                return;
+            } else if (intentType.equals("UAF_OPERATION_COMPLETION_STATUS")) {
+                uafOperationCompletionStatus(data);
+                return;
+            } else {
+                Log.w ("FIDO", "Unknown UAFIntentType: " + intentType);                    
+            }
         }
     }
 }

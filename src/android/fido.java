@@ -7,6 +7,7 @@ import android.content.ActivityNotFoundException;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.PluginResult;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,18 +23,22 @@ import android.content.pm.ApplicationInfo;
  */
 public class fido extends CordovaPlugin {
 
+    private CallbackContext callbackContext;
+
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         Log.w("FIDO", "executing...");
         if (action.equals("uafDiscover")) {
             String message = args.getString(0);
-            this.uafDiscover(message, callbackContext);
-            return true;
+            return this.uafDiscover(message, callbackContext);
         }
         return false;
     }
 
-    private void uafDiscover(String message, CallbackContext callbackContext) {
+    private boolean uafDiscover(String message, CallbackContext callbackContext) {
+
+        this.callbackContext = callbackContext;
+
         /**
          * Lookup Packages that provide the intent
          * Per UAF Client API Transport, Section 6.2 (See: "NOTE")
@@ -80,13 +85,18 @@ public class fido extends CordovaPlugin {
         }
         Log.d("FIDO", "blah blah blah");
 
-        Log.w("FIDO", "uafDiscover...");
-        if (message != null && message.length() > 0) {
-            // this.cordova.startActivityForResult((CordovaPlugin) this,i, 0);
-            callbackContext.success("{\"testing\": \"" + message + "\"}");
-        } else {
-            callbackContext.error("Expected one non-empty string argument.");
-        }
+        PluginResult r = new PluginResult(PluginResult.Status.NO_RESULT);
+        r.setKeepCallback(true);
+        callbackContext.sendPluginResult(r);
+
+        // Log.w("FIDO", "uafDiscover...");
+        // if (message != null && message.length() > 0) {
+        //     // this.cordova.startActivityForResult((CordovaPlugin) this,i, 0);
+        //     callbackContext.success("{\"testing\": \"" + message + "\"}");
+        // } else {
+        //     callbackContext.error("Expected one non-empty string argument.");
+        // }
+        return true;
     }
 
     @Override
@@ -117,6 +127,7 @@ public class fido extends CordovaPlugin {
             Log.d ("FIDO", "Error Code: " + errorCode);
             String discoveryData = data.getStringExtra("discoveryData");
             Log.d ("FIDO", "Discovery Data: " + discoveryData);
+            this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, discoveryData));
         }
     }
 }

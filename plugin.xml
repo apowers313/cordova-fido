@@ -2,7 +2,7 @@
 <plugin id="org.fidoalliance.mobile" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>fido</name>
     <js-module name="fido" src="www/fido.js">
-        <clobbers target="cordova.plugins.fido"/>
+        <clobbers target="fido"/>
     </js-module>
     <platform name="android">
         <config-file parent="/*" target="res/xml/config.xml">

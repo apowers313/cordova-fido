@@ -4,6 +4,7 @@ import android.util.Log;
 import android.content.Intent;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.os.Bundle;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
@@ -25,6 +26,17 @@ import android.webkit.WebView;
  * This class echoes a string called from JavaScript.
  */
 public class fido extends CordovaPlugin {
+    // interface ErrorCode {
+    //     const short NO_ERROR = 0x0;
+    //     const short WAIT_USER_ACTION = 0x1;
+    //     const short INSECURE_TRANSPORT = 0x2;
+    //     const short USER_CANCELLED = 0x3;
+    //     const short UNSUPPORTED_VERSION = 0x4;
+    //     const short NO_SUITABLE_AUTHENTICATOR = 0x5;
+    //     const short PROTOCOL_ERROR = 0x6;
+    //     const short UNTRUSTED_FACET_ID = 0x7;
+    //     const short UNKNOWN = 0xFF;
+    // };
 
     private CallbackContext callbackContext;
 
@@ -40,7 +52,12 @@ public class fido extends CordovaPlugin {
             return this.uafCheckPolicy(message);
         } else if (action.equals("uafOperation")) {
             String message = args.getString(0);
-            return this.uafOperation(message);
+            Log.d ("FIDO", "uafOperation: message: " + message);
+            String channelBindings = args.getString(1);
+            Log.d ("FIDO", "uafOperation: channel bindings: " + channelBindings);
+            String origin = args.getString(2);
+            Log.d ("FIDO", "uafOperation: origin: " + origin);
+            return this.uafOperation(message, channelBindings, origin);
         } else {
             Log.w("FIDO", "Unknown FIDO Cordova command: " + action);
             return false;
@@ -138,7 +155,7 @@ public class fido extends CordovaPlugin {
     }
 
     // private boolean uafOperation(String message, String channelBindings, String origin) {
-    private boolean uafOperation(String message) {
+    private boolean uafOperation(String message, String channelBindings, String origin) {
         Log.d("FIDO", "uafOperation: " + message);
 
         /**
@@ -147,8 +164,15 @@ public class fido extends CordovaPlugin {
          * If nothing is found, startActivityForResult() will throw an ActivityNotFoundException error
          */
         Intent fidoIntent = new Intent("org.fidoalliance.intent.FIDO_OPERATION");
-        fidoIntent.setType ("application/fido.uaf_client+json");
         fidoIntent.putExtra ("UAFIntentType", "UAF_OPERATION");
+        fidoIntent.setType ("application/fido.uaf_client+json");
+        // fidoIntent.addCategory("android.intent.category.CATEGORY_SELECTED_ALTERNATIVE");
+
+        fidoIntent.putExtra("message", message);
+        fidoIntent.putExtra("channelBindings", channelBindings);
+        if (origin != null) {
+            fidoIntent.putExtra("origin", origin);
+        }
 
         /**
          * Fire our FIDO_OPERATION::DISCOVER
@@ -180,6 +204,15 @@ public class fido extends CordovaPlugin {
         Log.d("FIDO", "uafOperationResult");
 
         Log.d ("FIDO", data.toString());
+        Bundle bundle = data.getExtras();
+        if (bundle != null) {
+            Log.d ("FIDO", "non-null bundle, iterating");
+            for (String key : bundle.keySet()) {
+                Object value = bundle.get(key);
+                Log.d("FIDO", String.format("%s %s (%s)", key,  
+                    value.toString(), value.getClass().getName()));
+            }
+        }
         String errorCode = data.getStringExtra("errorCode"); // XXX wrong
         Log.d ("FIDO", "Error Code: " + errorCode);
         String message = data.getStringExtra("message");
@@ -208,6 +241,10 @@ public class fido extends CordovaPlugin {
         Log.d("FIDO", "Got Activity Result");
         Log.d("FIDO", "Request Code: " + requestCode);
         Log.d("FIDO", "Result Code: " + resultCode);
+        if (data == null) {
+            Log.w("FIDO", "WARNING: got null data in onActivityResult");
+            return;
+        }
 
         /**
          * This is a FIDO_OPERATION UAF Intent (as opposed to other Intents we might catch)
@@ -230,6 +267,8 @@ public class fido extends CordovaPlugin {
             } else {
                 Log.w ("FIDO", "Unknown UAFIntentType: " + intentType);                    
             }
+        } else {
+            Log.w ("FIDO", "UAFIntentType not found");
         }
     }
 }

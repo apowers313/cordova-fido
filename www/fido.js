@@ -38,7 +38,11 @@ var fido = {
                 },
                 function(err) { // error
                     reject (err);
-                }, "fido", "uafOperation", [message, channelBindings, origin]);
+                }, "fido", "uafOperation", [ // args
+                    {uafProtocolMessage: JSON.stringify(message), additionalData: {}}, // XXX note that we are modifying the first argument here to uafMessage format. not sure if this belongs here, or in the Java code
+                    channelBindings, 
+                    origin
+                ]);
         });
     }
 };

@@ -60,7 +60,9 @@ var fido = {
         processUAFOperation: function(message) {
             return new Promise(function(resolve, reject) {
                 exec(
-                    resolve, // success
+                    (data) => {
+                        resolve(JSON.parse(data))
+                    }, // success
                     reject,  // fail
                     "fido",
                     "uafOperation",

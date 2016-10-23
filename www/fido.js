@@ -45,7 +45,10 @@ var fido = {
         checkPolicy: function(message) {
             return new Promise(function(resolve, reject) {
                 exec(
-                    resolve, // success
+                    /**
+                     * checkPolicy must always return exception. The only difference is status code.
+                     */
+                    reject, // success
                     reject,  // fail
                     "fido",
                     "uafCheckPolicy",

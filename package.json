@@ -1,0 +1,25 @@
+{
+  "name": "cordova-fido",
+  "version": "0.8.0",
+  "description": "A FIDO plugin for Cordova that exposes the UAF DOM API for password-less secure authentication",
+  "cordova": {
+    "id": "org.fidoalliance.mobile",
+    "platforms": [
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apowers313/fido-cordova.git"
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "Adam Powers <apowers@ato.ms>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apowers313/fido-cordova/issues"
+  },
+  "homepage": "https://github.com/apowers313/fido-cordova#readme"
+}

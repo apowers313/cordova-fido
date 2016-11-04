@@ -1,6 +1,6 @@
 {
   "name": "cordova-fido",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "A FIDO plugin for Cordova that exposes the UAF DOM API for password-less secure authentication",
   "cordova": {
     "id": "org.fidoalliance.mobile",

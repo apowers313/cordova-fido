@@ -27,8 +27,8 @@ var origin = "https://example.com/"
  * These functions are basically convenience functions for cordova.exec()
  * They bind to the 'clobbers' target defined in the plugin.xml file, such that
  * uafDiscover() becomes fido.uafDiscover() in the Cordova application
- */ 
-var fido = {
+ */
+window.navigator.fido = {
     uaf : {
         discover: function() {
             return new Promise(function(resolve, reject) {

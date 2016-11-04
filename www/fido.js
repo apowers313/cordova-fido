@@ -79,4 +79,4 @@ window.navigator.fido = {
     }
 };
 
-module.exports = fido;
+module.exports = navigator.fido;

@@ -33,7 +33,9 @@ window.navigator.fido = {
         discover: function() {
             return new Promise(function(resolve, reject) {
                 exec(
-                    resolve, // success
+                    (data) => {
+                        resolve(JSON.parse(data))
+                    }, // success
                     reject,  // fail
                     "fido",
                     "uafDiscover",

@@ -30,53 +30,47 @@ var origin = "https://example.com/"
  */
 window.navigator.fido = {
     uaf : {
-        discover: function() {
-            return new Promise(function(resolve, reject) {
-                exec(
-                    (data) => {
-                        resolve(JSON.parse(data))
-                    }, // success
-                    reject,  // fail
-                    "fido",
-                    "uafDiscover",
-                    []
-                );
-            });
+        discover: function(completionCallback, errorCallback) {
+            exec(
+
+                (data) => {
+                    completionCallback(JSON.parse(data))
+                }, // success
+
+                errorCallback,  // fail
+
+                "fido",
+                "uafDiscover",
+                []
+            );
         },
 
-        checkPolicy: function(message) {
-            return new Promise(function(resolve, reject) {
-                exec(
-                    /**
-                     * checkPolicy must always return exception. The only difference is status code.
-                     */
-                    reject, // success
-                    reject,  // fail
-                    "fido",
-                    "uafCheckPolicy",
-                    [ message, origin ]
-                );
-            });
+        checkPolicy: function(message, errorCallback) {
+            exec(
+                /**
+                 * checkPolicy must always return exception. The only difference is status code.
+                 */
+                errorCallback, // success
+                errorCallback,  // fail
+                "fido",
+                "uafCheckPolicy",
+                [ message, origin ]
+            );
         },
 
-        processUAFOperation: function(message) {
-            return new Promise(function(resolve, reject) {
-                exec(
-                    (data) => {
-                        resolve(JSON.parse(data))
-                    }, // success
-                    reject,  // fail
-                    "fido",
-                    "uafOperation",
-                    [ message, channelBindings, origin ]
-                );
-            });
+        processUAFOperation: function(message, completionCallback, errorCallback) {
+            exec(
+                (data) => {
+                    completionCallback(JSON.parse(data))
+                }, // success
+                errorCallback, // fail
+                "fido",
+                "uafOperation",
+                [ message, channelBindings, origin ]
+            );
         },
 
-        notifyUAFResult: function(responseCode) {
-            return new Promise(function(resolve, reject) {
-                // TODO Implement notifyUAFResult (int responseCode, UAFMessage uafResponse);
-            });
+        notifyUAFResult: function(responseCode, uafResponse) {
         }
     }
 };
